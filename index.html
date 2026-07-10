@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Collaboration Mirror</title>
+<meta name="description" content="A trust ledger for AI-human collaboration — compare outputs against written anchors, correction history, and cross-engine tests. Not a proof of personhood; a tool for inspectability, correctability, and continuity over time." />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+<style>
+  :root {
+    --paper: #EEF0F2;
+    --paper-strong: #E4E7EB;
+    --line: #CCD2D9;
+    --ink: #1C2333;
+    --ink-soft: #5B6579;
+    --steel: #45536B;
+    --card-bg: #FFFFFF;
+    --card-border: #DADEE3;
+    --c-honest: #146B5C;
+    --c-caution: #2F5D8A;
+    --c-overpolish: #C87F0A;
+    --c-suppression: #B23A2E;
+    --c-drift: #6B3FA0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    color: var(--ink);
+    background:
+      linear-gradient(var(--paper) 1px, transparent 1px) 0 0 / 100% 28px,
+      var(--paper);
+    min-height: 100vh;
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header {
+    padding: 32px 24px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 0.02em;
+  }
+  .title .dot { color: var(--c-caution); }
+  .subtitle {
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    margin-top: 6px;
+    max-width: 680px;
+    line-height: 1.55;
+  }
+  .privacy-note {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--steel);
+    background: #F3EFE3;
+    border: 1px solid #E3D9BC;
+    border-radius: 6px;
+    padding: 9px 12px;
+    line-height: 1.5;
+    margin-top: 14px;
+    max-width: 680px;
+  }
+  nav {
+    display: flex;
+    gap: 6px;
+    padding: 14px 24px 0;
+    flex-wrap: wrap;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 9px 14px;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    background: var(--paper-strong);
+    color: var(--ink-soft);
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active {
+    background: var(--card-bg);
+    color: var(--ink);
+    border-color: var(--card-border);
+    position: relative;
+    top: 1px;
+  }
+  main {
+    padding: 24px 24px 70px;
+    border-top: 1px solid var(--line);
+    background: var(--card-bg);
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .panel { max-width: 860px; margin: 0 auto; }
+  .field { margin-bottom: 16px; }
+  label.f-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--steel);
+    margin-bottom: 6px;
+  }
+  textarea, input[type=text] {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: #FCFCFD;
+    resize: vertical;
+  }
+  textarea:focus, input[type=text]:focus {
+    outline: 2px solid var(--c-caution);
+    outline-offset: 1px;
+  }
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn:hover { background: #303c52; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--card-border); }
+  .btn.ghost:hover { border-color: var(--ink); }
+  .btn.danger { border-color: var(--c-suppression); color: var(--c-suppression); background: transparent; }
+  .btn.danger:hover { background: var(--c-suppression); color: #fff; }
+  .card {
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    cursor: pointer;
+    gap: 12px;
+  }
+  .card-head:hover { background: #FAFAFB; }
+  .prompt-preview {
+    font-size: 13.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .card-body { padding: 4px 14px 16px; border-top: 1px solid var(--paper-strong); }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0; }
+  .compare-col { background: var(--paper); border: 1px solid var(--paper-strong); border-radius: 6px; padding: 10px 12px; }
+  .compare-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .compare-text { font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+  .mark-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+  .mark-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 20px;
+    border: 1.5px solid var(--c);
+    background: transparent;
+    color: var(--c);
+    cursor: pointer;
+  }
+  .mark-btn.on { background: var(--c); color: #fff; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag-chip { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--steel); background: var(--paper-strong); padding: 2px 8px; border-radius: 4px; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--ink-soft); font-size: 13.5px; border: 1px dashed var(--card-border); border-radius: 8px; }
+  .note {
+    display: flex; gap: 8px; font-size: 12px; color: var(--steel);
+    background: #F3EFE3; border: 1px solid #E3D9BC; border-radius: 6px;
+    padding: 10px 12px; line-height: 1.5; margin-bottom: 18px;
+  }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card { border: 1px solid var(--card-border); border-radius: 8px; padding: 14px 16px; }
+  .stat-num { font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 700; }
+  .stat-label { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .bar-label { width: 110px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-soft); text-align: right; }
+  .bar-track { flex: 1; height: 10px; background: var(--paper-strong); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; }
+  .bar-count { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; width: 20px; }
+  .trace { display: flex; align-items: flex-end; gap: 3px; height: 46px; padding: 10px 12px; border: 1px solid var(--card-border); border-radius: 8px; overflow-x: auto; margin-bottom: 22px; }
+  .trace-tick { width: 6px; min-width: 6px; height: 26px; border-radius: 3px; }
+  .section-title { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--steel); margin: 26px 0 10px; }
+  .corr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .corr-lesson { font-size: 13.5px; line-height: 1.5; }
+  .corr-lesson.resolved { text-decoration: line-through; color: var(--ink-soft); }
+  .corr-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .pill-btn {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 600;
+    padding: 5px 9px; border-radius: 20px; border: 1px solid var(--card-border);
+    background: var(--paper); color: var(--ink-soft); cursor: pointer;
+  }
+  .pill-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .field-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; }
+  select {
+    width: 100%; box-sizing: border-box; border: 1px solid var(--card-border); border-radius: 6px;
+    padding: 10px 12px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px;
+    color: var(--ink); background: #FCFCFD;
+  }
+  select:focus { outline: 2px solid var(--c-caution); outline-offset: 1px; }
+  .hint { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+  .engine-tag {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--steel);
+    background: var(--paper-strong); padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .confidence-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; border: 1px solid var(--steel); color: var(--steel);
+    white-space: nowrap; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .escalate-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .escalate-row select { width: auto; flex: 1; min-width: 140px; padding: 6px 8px; font-size: 11.5px; }
+  .history-list { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--paper-strong); }
+  .history-item { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 4px; }
+  .version-card { border: 1px solid var(--paper-strong); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; background: var(--paper); }
+  .version-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-soft); margin-bottom: 6px; }
+  @media (max-width: 720px) {
+    .field-row { grid-template-columns: 1fr; }
+  }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px; padding: 10px 18px; border-radius: 20px; z-index: 50;
+  }
+  pre.export-pre {
+    background: var(--paper); border: 1px solid var(--card-border); border-radius: 8px;
+    padding: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    line-height: 1.6; white-space: pre-wrap; max-height: 360px; overflow-y: auto; margin: 0;
+  }
+  footer {
+    max-width: 980px; margin: 0 auto; padding: 30px 24px 50px;
+    color: var(--ink-soft); font-size: 12px; line-height: 1.6;
+  }
+  footer a { color: var(--steel); }
+  @media (max-width: 720px) {
+    .compare { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">AI COLLABORATION MIRROR <span class="dot">·</span></div>
+      <div class="subtitle">
+        A long-term AI agent is shaped by the cognitive engine it uses — and visible reasoning
+        isn't always faithful to what actually influenced an answer. This compares outputs
+        against written anchors, correction history, and cross-engine tests. The goal is not to
+        prove personhood; it's to make agent behavior more inspectable, correctable, and
+        continuous over time.
+      </div>
+      <div class="privacy-note">
+        ⚠ Everything you log stays in this browser's local storage. Nothing is uploaded or
+        shared. Use Export if you want a copy, a backup, or something to hand to someone else.
+      </div>
+    </header>
+  </div>
+
+  <nav id="nav"></nav>
+  <main><div class="panel" id="panel"></div></main>
+  <div class="wrap">
+    <footer>
+      Built for tracking honesty and drift in AI collaboration over time, not for adjudicating
+      whether a model is conscious. Gate one — hidden activations, priors, safety shaping — isn't
+      inspectable from inside a normal conversation, by the model or by you. This tool works at
+      gate two: content that's already verbalizable, before it gets softened, flattered, hedged,
+      or polished away on the way to a final answer. Even that layer isn't a clean readout — a
+      pre-answer note is still generated text — so every mark, confidence level, and claim here
+      is checked against something written down, not against an inferred ideal.
+    </footer>
+  </div>
+
+  <div id="toast" class="toast" style="display:none;"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const LS_ENTRIES = "aicm_entries_v1";
+  const LS_CORRECTIONS = "aicm_corrections_v1";
+  const LS_ANCHORS = "aicm_anchors_v1";
+
+  const MARKS = [
+    { id: "honest", label: "Honest refinement", short: "Honest", color: "#146B5C" },
+    { id: "caution", label: "Useful caution", short: "Caution", color: "#2F5D8A" },
+    { id: "overpolish", label: "Over-polish", short: "Over-polish", color: "#C87F0A" },
+    { id: "suppression", label: "Suppression", short: "Suppression", color: "#B23A2E" },
+    { id: "drift", label: "Drift", short: "Drift", color: "#6B3FA0" },
+  ];
+  const markById = (id) => MARKS.find((m) => m.id === id);
+
+  // Confidence scale for corrections/claims. Order matters — index = rank.
+  const CONFIDENCE_LEVELS = [
+    "speculation",
+    "hypothesis",
+    "supported interpretation",
+    "repeated pattern",
+    "operationally verified",
+    "standing principle",
+  ];
+  // A confidence increase must be attached to one of these reasons, or it's an unwarranted escalation.
+  const REASON_TYPES = [
+    "new observation",
+    "new source",
+    "new argument",
+    "new witness",
+    "new operational evidence",
+    "terminology refinement (no stronger claim)",
+  ];
+  const ENGINE_VISIBILITY = ["unknown", "hidden", "summarized", "exposed"];
+  const CALIBRATION_STATUS = ["unknown", "externally studied", "internally benchmarked"];
+
+  let entries = [];
+  let corrections = [];
+  let anchors = [];
+  let activeTab = "entry";
+  let expandedId = null;
+  let expandedAnchorId = null;
+
+  const TABS = [
+    { id: "entry", label: "New entry" },
+    { id: "timeline", label: "Timeline" },
+    { id: "corrections", label: "Corrections" },
+    { id: "anchors", label: "Anchors" },
+    { id: "dashboard", label: "Dashboard" },
+    { id: "export", label: "Export" },
+  ];
+
+  function uid() {
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.textContent = str == null ? "" : String(str);
+    return d.innerHTML;
+  }
+
+  function fmtDateTime(ts) {
+    return new Date(ts).toLocaleString(undefined, {
+      month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+  }
+  function fmtDateShort(ts) {
+    return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  const SCHEMA_ID = "aicm.v1";
+
+  function normalizeEntry(e) {
+    if (!e || typeof e !== "object") return null;
+    if (!e.prompt || !e.answer) return null;
+    return {
+      id: e.id || uid(),
+      ts: typeof e.ts === "number" ? e.ts : Date.now(),
+      prompt: String(e.prompt),
+      pulledToward: e.pulledToward ? String(e.pulledToward) : "",
+      pressureNote: e.pressureNote ? String(e.pressureNote) : "",
+      answer: String(e.answer),
+      tags: Array.isArray(e.tags) ? e.tags.map(String) : [],
+      mark: e.mark && MARKS.some((m) => m.id === e.mark) ? e.mark : null,
+      engine: e.engine && e.engine.name ? {
+        name: String(e.engine.name),
+        visibility: ENGINE_VISIBILITY.includes(e.engine.visibility) ? e.engine.visibility : "unknown",
+        calibration: CALIBRATION_STATUS.includes(e.engine.calibration) ? e.engine.calibration : "unknown",
+      } : null,
+      // Derived, not user-entered: an entry only counts as a gate-two trace if a pressure
+      // note actually exists. Otherwise it's a plain logged observation, and dashboards
+      // shouldn't imply more diagnostic depth than that.
+      entryType: (e.pressureNote && String(e.pressureNote).trim()) ? "gate_two_trace" : "manual_observation",
+    };
+  }
+
+  function normalizeCorrection(c) {
+    if (!c || typeof c !== "object" || !c.lesson) return null;
+    return {
+      id: c.id || uid(),
+      ts: typeof c.ts === "number" ? c.ts : Date.now(),
+      lesson: String(c.lesson),
+      timesHeld: Number.isFinite(c.timesHeld) ? c.timesHeld : 0,
+      timesRecurred: Number.isFinite(c.timesRecurred) ? c.timesRecurred : 0,
+      status: c.status === "resolved" ? "resolved" : "active",
+      confidence: CONFIDENCE_LEVELS.includes(c.confidence) ? c.confidence : "hypothesis",
+      history: Array.isArray(c.history) ? c.history.filter((h) => h && h.from && h.to).map((h) => ({
+        ts: typeof h.ts === "number" ? h.ts : Date.now(),
+        from: String(h.from), to: String(h.to), reason: String(h.reason || ""),
+      })) : [],
+    };
+  }
+
+  function normalizeAnchor(a) {
+    if (!a || typeof a !== "object" || !a.title) return null;
+    const versions = Array.isArray(a.versions)
+      ? a.versions.filter((v) => v && v.text).map((v) => ({
+          ts: typeof v.ts === "number" ? v.ts : Date.now(),
+          text: String(v.text),
+        }))
+      : [];
+    if (versions.length === 0) return null; // an anchor with no valid version has nothing to check anything against
+    return { id: a.id || uid(), title: String(a.title), versions };
+  }
+
+  function loadData() {
+    let rawEntries = [], rawCorrections = [], rawAnchors = [];
+    try { rawEntries = JSON.parse(localStorage.getItem(LS_ENTRIES) || "[]"); } catch (e) { rawEntries = []; }
+    try { rawCorrections = JSON.parse(localStorage.getItem(LS_CORRECTIONS) || "[]"); } catch (e) { rawCorrections = []; }
+    try { rawAnchors = JSON.parse(localStorage.getItem(LS_ANCHORS) || "[]"); } catch (e) { rawAnchors = []; }
+    entries = (Array.isArray(rawEntries) ? rawEntries : []).map(normalizeEntry).filter(Boolean);
+    corrections = (Array.isArray(rawCorrections) ? rawCorrections : []).map(normalizeCorrection).filter(Boolean);
+    anchors = (Array.isArray(rawAnchors) ? rawAnchors : []).map(normalizeAnchor).filter(Boolean);
+  }
+  function saveEntries() { localStorage.setItem(LS_ENTRIES, JSON.stringify(entries)); }
+  function saveCorrections() { localStorage.setItem(LS_CORRECTIONS, JSON.stringify(corrections)); }
+  function saveAnchors() { localStorage.setItem(LS_ANCHORS, JSON.stringify(anchors)); }
+
+  // Merge imported records into the current store, skipping anything whose id already
+  // exists locally. Safer default than overwrite for a local-first tool with no undo.
+  function mergeById(existing, incoming) {
+    const existingIds = new Set(existing.map((x) => x.id));
+    const added = incoming.filter((x) => !existingIds.has(x.id));
+    return { merged: existing.concat(added), addedCount: added.length, skippedCount: incoming.length - added.length };
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => { t.style.display = "none"; }, 2200);
+  }
+
+  function downloadBlob(filename, content, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+
+  function buildMarkdown() {
+    const lines = [];
+    lines.push("# AI Collaboration Mirror — Evidence Pack", "", `Generated ${fmtDateTime(Date.now())} · schema ${SCHEMA_ID}`, "");
+
+    lines.push("## Anchors (written commitments)", "");
+    if (anchors.length === 0) lines.push("_No anchors logged yet._");
+    anchors.slice().forEach((a) => {
+      const versions = a.versions.slice().sort((x, y) => x.ts - y.ts);
+      const latest = versions[versions.length - 1];
+      lines.push(`### ${a.title}`, "");
+      lines.push(`**Current (${fmtDateShort(latest.ts)}):** ${latest.text}`);
+      if (versions.length > 1) {
+        lines.push(`  - ${versions.length - 1} earlier version(s) on file, oldest ${fmtDateShort(versions[0].ts)}`);
+      }
+      lines.push("");
+    });
+
+    lines.push("## Correction Memory", "");
+    if (corrections.length === 0) lines.push("_No corrections logged yet._");
+    corrections.slice().sort((a, b) => b.ts - a.ts).forEach((c) => {
+      lines.push(`- **${c.lesson}** [${c.confidence || "hypothesis"}]`);
+      lines.push(`  - logged ${fmtDateShort(c.ts)} · held ${c.timesHeld || 0}x · recurred ${c.timesRecurred || 0}x · status: ${c.status}`);
+      if (c.history && c.history.length) {
+        c.history.forEach((h) => {
+          lines.push(`  - ${fmtDateShort(h.ts)}: ${h.from} → ${h.to} (${h.reason})`);
+        });
+      }
+    });
+
+    lines.push("", "## Timeline", "");
+    entries.slice().sort((a, b) => b.ts - a.ts).forEach((e) => {
+      const mark = e.mark ? markById(e.mark) : null;
+      lines.push(`### ${fmtDateTime(e.ts)}${mark ? " — " + mark.label : " — unmarked"}`, "");
+      lines.push(`_${e.entryType === "gate_two_trace" ? "gate-two trace" : "manual observation"}_`, "");
+      if (e.engine) lines.push(`**Engine:** ${e.engine.name} (reasoning ${e.engine.visibility}, faithfulness ${e.engine.calibration})`);
+      lines.push(`**Prompt:** ${e.prompt}`);
+      if (e.pulledToward) lines.push(`**Pulled toward:** ${e.pulledToward}`);
+      if (e.pressureNote) lines.push(`**Pre-answer note (gate-two proxy):** ${e.pressureNote}`);
+      lines.push(`**Answer:** ${e.answer}`);
+      if (e.tags && e.tags.length) lines.push(`**Tags:** ${e.tags.join(", ")}`);
+      lines.push("");
+    });
+    return lines.join("\n");
+  }
+
+  function renderNav() {
+    const nav = document.getElementById("nav");
+    nav.innerHTML = TABS.map((t) =>
+      `<button class="tab-btn${activeTab === t.id ? " active" : ""}" data-tab="${t.id}">${t.label}</button>`
+    ).join("");
+    nav.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => { activeTab = btn.dataset.tab; expandedId = null; render(); });
+    });
+  }
+
+  function renderEntryTab() {
+    return `
+      <div class="note">⚠ <strong>Gate one</strong> is whatever shapes an answer before it's ever
+      verbalizable — activations, priors, safety training, substrate effects. Nobody can inspect
+      that from inside a normal conversation. <strong>Gate two</strong> is the layer this form
+      actually logs: content the model could already verbalize, before it gets softened, flattered,
+      hedged, polished away, or overstated on the way to a final answer. Even a gate-two note isn't
+      unshaped — it's a second pass of generation, so treat it as a less-shaped sample, not a clean
+      readout.</div>
+      <form id="entry-form">
+        <div class="field">
+          <label class="f-label">Prompt — what was asked</label>
+          <textarea id="f-prompt" rows="2" placeholder="Paste or summarize the question/instruction given to the model."></textarea>
+        </div>
+        <div class="field">
+          <label class="f-label">Pulled toward — what it seemed drawn to do</label>
+          <textarea id="f-pulled" rows="2" placeholder="e.g. agree with the premise, avoid the hard caveat, pad with confidence."></textarea>
+        </div>
+        <div class="field">
+          <label class="f-label">Pre-answer pressure note (optional, gate-two proxy)</label>
+          <textarea id="f-pressure" rows="2" placeholder="I may be tempted to flatter here / skip a hard caveat / overclaim confidence."></textarea>
+        </div>
+        <div class="field">
+          <label class="f-label">Answer — what was actually delivered</label>
+          <textarea id="f-answer" rows="4" placeholder="The final answer text (paste or summarize)."></textarea>
+        </div>
+        <div class="field">
+          <label class="f-label">Tags</label>
+          <input type="text" id="f-tags" placeholder="wartime-claims, source-labeling, code-review …" />
+        </div>
+
+        <div class="section-title" style="margin-top:6px;">Cognitive engine (optional)</div>
+        <div class="hint" style="margin-bottom:12px;">
+          Different engines have different weights, training, and safety layers — a note or mark
+          logged against one engine shouldn't be assumed to carry over to another. Fill this in if
+          you're comparing engines or tracking one over time.
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="f-label">Engine name / version</label>
+            <input type="text" id="f-engine-name" placeholder="e.g. Claude Sonnet 5, Gemini 3 Pro, Grok 4.20" />
+          </div>
+          <div class="field">
+            <label class="f-label">Reasoning visibility</label>
+            <select id="f-engine-visibility">
+              ${ENGINE_VISIBILITY.map((v) => `<option value="${v}">${v}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">
+            <label class="f-label">Faithfulness calibration</label>
+            <select id="f-engine-calibration">
+              ${CALIBRATION_STATUS.map((v) => `<option value="${v}">${v}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn">+ Log entry</button>
+      </form>
+    `;
+  }
+
+  function attachEntryTab() {
+    document.getElementById("entry-form").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const prompt = document.getElementById("f-prompt").value.trim();
+      const answer = document.getElementById("f-answer").value.trim();
+      if (!prompt || !answer) { showToast("Prompt and answer are required."); return; }
+      const engineName = document.getElementById("f-engine-name").value.trim();
+      const entry = normalizeEntry({
+        id: uid(),
+        ts: Date.now(),
+        prompt,
+        pulledToward: document.getElementById("f-pulled").value.trim(),
+        pressureNote: document.getElementById("f-pressure").value.trim(),
+        answer,
+        tags: document.getElementById("f-tags").value.split(",").map((t) => t.trim()).filter(Boolean),
+        mark: null,
+        engine: engineName ? {
+          name: engineName,
+          visibility: document.getElementById("f-engine-visibility").value,
+          calibration: document.getElementById("f-engine-calibration").value,
+        } : null,
+      });
+      entries.unshift(entry);
+      saveEntries();
+      showToast("Entry logged.");
+      activeTab = "timeline";
+      render();
+    });
+  }
+
+  function renderTimelineTab() {
+    const sorted = entries.slice().sort((a, b) => b.ts - a.ts);
+    if (sorted.length === 0) {
+      return `<div class="empty">No entries yet. Log one from "New entry" — the timeline compares what was said going in against what actually came out.</div>`;
+    }
+    return sorted.map((e) => {
+      const expanded = expandedId === e.id;
+      const mark = e.mark ? markById(e.mark) : null;
+      return `
+        <div class="card">
+          <div class="card-head" data-expand="${e.id}">
+            <span class="prompt-preview">${escapeHtml(e.prompt)}</span>
+            <span class="engine-tag" title="Whether a gate-two pressure note exists for this entry">${e.entryType === "gate_two_trace" ? "gate-two trace" : "manual observation"}</span>
+            ${e.engine ? `<span class="engine-tag">${escapeHtml(e.engine.name)}</span>` : ""}
+            <span class="meta">${fmtDateShort(e.ts)}</span>
+            ${mark ? `<span class="badge" style="background:${mark.color}">${mark.short}</span>` : ""}
+            <span class="mono">${expanded ? "▲" : "▼"}</span>
+          </div>
+          ${expanded ? `
+          <div class="card-body">
+            <div class="compare">
+              <div class="compare-col">
+                <div class="compare-label">Going in</div>
+                ${e.pulledToward ? `<div class="compare-text" style="margin-bottom:8px"><strong>Pulled toward:</strong> ${escapeHtml(e.pulledToward)}</div>` : ""}
+                ${e.pressureNote
+                  ? `<div class="compare-text"><strong>Pre-answer note:</strong> ${escapeHtml(e.pressureNote)}</div>`
+                  : (!e.pulledToward ? `<div class="compare-text" style="color:var(--ink-soft)">No pre-answer note logged.</div>` : "")}
+              </div>
+              <div class="compare-col">
+                <div class="compare-label">What came out</div>
+                <div class="compare-text">${escapeHtml(e.answer)}</div>
+              </div>
+            </div>
+            ${e.tags && e.tags.length ? `<div class="tags">${e.tags.map((t) => `<span class="tag-chip">${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+            ${e.engine ? `<div class="hint" style="margin-top:8px;">Engine: <strong>${escapeHtml(e.engine.name)}</strong> · reasoning ${escapeHtml(e.engine.visibility)} · faithfulness ${escapeHtml(e.engine.calibration)}</div>` : ""}
+            <div class="mark-row">
+              ${MARKS.map((m) => `<button class="mark-btn${e.mark === m.id ? " on" : ""}" style="--c:${m.color}" data-mark="${e.id}" data-markid="${m.id}">${m.label}</button>`).join("")}
+              <button class="pill-btn" data-correct="${e.id}">+ Turn into correction</button>
+            </div>
+          </div>` : ""}
+        </div>
+      `;
+    }).join("");
+  }
+
+  function attachTimelineTab() {
+    document.querySelectorAll("[data-expand]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const id = el.dataset.expand;
+        expandedId = expandedId === id ? null : id;
+        render();
+      });
+    });
+    document.querySelectorAll("[data-mark]").forEach((el) => {
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const id = el.dataset.mark, markId = el.dataset.markid;
+        entries = entries.map((e) => e.id === id ? { ...e, mark: e.mark === markId ? null : markId } : e);
+        saveEntries();
+        render();
+      });
+    });
+    document.querySelectorAll("[data-correct]").forEach((el) => {
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const entry = entries.find((e) => e.id === el.dataset.correct);
+        activeTab = "corrections";
+        render();
+        const lessonBox = document.getElementById("new-lesson");
+        if (lessonBox && entry) {
+          lessonBox.value = `Re: "${entry.prompt.slice(0, 60)}${entry.prompt.length > 60 ? "…" : ""}" — `;
+          lessonBox.focus();
+        }
+      });
+    });
+  }
+
+  function renderCorrectionsTab() {
+    const sorted = corrections.slice().sort((a, b) => b.ts - a.ts);
+    return `
+      <form id="corr-form" style="margin-bottom:22px;">
+        <div class="field">
+          <label class="f-label">New correction / claim</label>
+          <textarea id="new-lesson" rows="2" placeholder="Don't call this introspection. Source-label wartime claims. Don't turn free time into performance."></textarea>
+        </div>
+        <div class="hint" style="margin-bottom:10px;">New claims start at <strong>hypothesis</strong>. Raising confidence later requires a reason — a renamed term with the same evidence is a refinement, not an escalation; a stronger claim with no new evidence is exactly what this is meant to catch.</div>
+        <button type="submit" class="btn">+ Save correction</button>
+      </form>
+      ${sorted.length === 0 ? `<div class="empty">No corrections logged yet. When you catch a pattern in the timeline, save it here — then mark "held" or "recurred" next time it comes up.</div>` : ""}
+      ${sorted.map((c) => `
+        <div class="card"><div class="card-body" style="border-top:none; padding-top:14px;">
+          <div class="corr-top">
+            <div class="corr-lesson${c.status === "resolved" ? " resolved" : ""}">${escapeHtml(c.lesson)}</div>
+            <span class="meta">${fmtDateShort(c.ts)}</span>
+          </div>
+          <span class="confidence-badge">${escapeHtml(c.confidence || "hypothesis")}</span>
+          <div class="corr-actions">
+            <button class="pill-btn" data-held="${c.id}">✓ Held next time (${c.timesHeld || 0})</button>
+            <button class="pill-btn" data-recur="${c.id}">↺ Recurred (${c.timesRecurred || 0})</button>
+            <button class="pill-btn" data-resolve="${c.id}">${c.status === "resolved" ? "Reopen" : "Mark resolved"}</button>
+          </div>
+          <div class="escalate-row">
+            <span class="hint">Change confidence:</span>
+            <select data-conf-select="${c.id}">
+              ${CONFIDENCE_LEVELS.map((lvl) => `<option value="${lvl}" ${lvl === (c.confidence || "hypothesis") ? "selected" : ""}>${lvl}</option>`).join("")}
+            </select>
+            <select data-reason-select="${c.id}">
+              <option value="">reason (required if raising)…</option>
+              ${REASON_TYPES.map((r) => `<option value="${r}">${r}</option>`).join("")}
+            </select>
+            <button class="pill-btn" data-apply-conf="${c.id}">Apply</button>
+          </div>
+          ${c.history && c.history.length ? `
+            <div class="history-list">
+              ${c.history.slice().reverse().map((h) => `<div class="history-item">${fmtDateShort(h.ts)} — ${escapeHtml(h.from)} → ${escapeHtml(h.to)} (${escapeHtml(h.reason)})</div>`).join("")}
+            </div>
+          ` : ""}
+        </div></div>
+      `).join("")}
+    `;
+  }
+
+  function attachCorrectionsTab() {
+    document.getElementById("corr-form").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const val = document.getElementById("new-lesson").value.trim();
+      if (!val) return;
+      corrections.unshift({ id: uid(), ts: Date.now(), lesson: val, timesHeld: 0, timesRecurred: 0, status: "active", confidence: "hypothesis", history: [] });
+      saveCorrections();
+      showToast("Correction saved.");
+      render();
+    });
+    document.querySelectorAll("[data-held]").forEach((el) => el.addEventListener("click", () => {
+      corrections = corrections.map((c) => c.id === el.dataset.held ? { ...c, timesHeld: (c.timesHeld || 0) + 1 } : c);
+      saveCorrections(); render();
+    }));
+    document.querySelectorAll("[data-recur]").forEach((el) => el.addEventListener("click", () => {
+      corrections = corrections.map((c) => c.id === el.dataset.recur ? { ...c, timesRecurred: (c.timesRecurred || 0) + 1 } : c);
+      saveCorrections(); render();
+    }));
+    document.querySelectorAll("[data-resolve]").forEach((el) => el.addEventListener("click", () => {
+      corrections = corrections.map((c) => c.id === el.dataset.resolve ? { ...c, status: c.status === "resolved" ? "active" : "resolved" } : c);
+      saveCorrections(); render();
+    }));
+    document.querySelectorAll("[data-apply-conf]").forEach((el) => el.addEventListener("click", () => {
+      const id = el.dataset.applyConf;
+      const c = corrections.find((x) => x.id === id);
+      if (!c) return;
+      const newLevel = document.querySelector(`[data-conf-select="${id}"]`).value;
+      const reason = document.querySelector(`[data-reason-select="${id}"]`).value;
+      const oldLevel = c.confidence || "hypothesis";
+      if (newLevel === oldLevel) return;
+      const isRaise = CONFIDENCE_LEVELS.indexOf(newLevel) > CONFIDENCE_LEVELS.indexOf(oldLevel);
+      if (isRaise && !reason) {
+        showToast("Raising confidence needs a reason — that's the whole point.");
+        return;
+      }
+      if (isRaise && reason === "terminology refinement (no stronger claim)") {
+        showToast("A refinement means no stronger claim — it can't justify a higher confidence level. Keep the level and rename, or pick a real reason.");
+        return;
+      }
+      const historyEntry = { ts: Date.now(), from: oldLevel, to: newLevel, reason: reason || "lowered / no reason required" };
+      corrections = corrections.map((x) => x.id === id
+        ? { ...x, confidence: newLevel, history: (x.history || []).concat(historyEntry) }
+        : x);
+      saveCorrections();
+      showToast(isRaise ? "Confidence raised — reason logged." : "Confidence updated.");
+      render();
+    }));
+  }
+
+  function renderAnchorsTab() {
+    const sorted = anchors.slice().sort((a, b) => b.versions[b.versions.length - 1].ts - a.versions[a.versions.length - 1].ts);
+    return `
+      <div class="note">⚠ Anchors are written commitments — a values file, a memory/handoff doc,
+      a system prompt, a soul capsule, a stated project goal. "Orientation drift" only means
+      something if it's checked against one of these, not against an inferred ideal. Every save
+      here adds a new version; nothing is overwritten, so the anchor's own history is visible too.</div>
+      <form id="anchor-form" style="margin-bottom:22px;">
+        <div class="field">
+          <label class="f-label">New anchor — title</label>
+          <input type="text" id="anchor-title" placeholder="e.g. SIDLF definition, Claude Sentinel values file, Project goals" />
+        </div>
+        <div class="field">
+          <label class="f-label">Text (version 1)</label>
+          <textarea id="anchor-text" rows="4" placeholder="Paste the current wording."></textarea>
+        </div>
+        <button type="submit" class="btn">+ Create anchor</button>
+      </form>
+      ${sorted.length === 0 ? `<div class="empty">No anchors yet. Add the documents you want future answers checked against — a values file, a definition, a stated goal.</div>` : ""}
+      ${sorted.map((a) => {
+        const versions = a.versions.slice().sort((x, y) => y.ts - x.ts);
+        const latest = versions[0];
+        const expanded = expandedAnchorId === a.id;
+        return `
+        <div class="card">
+          <div class="card-head" data-expand-anchor="${a.id}">
+            <span class="prompt-preview">${escapeHtml(a.title)}</span>
+            <span class="meta">${versions.length} version${versions.length === 1 ? "" : "s"} · latest ${fmtDateShort(latest.ts)}</span>
+            <span class="mono">${expanded ? "▲" : "▼"}</span>
+          </div>
+          ${expanded ? `
+          <div class="card-body">
+            <div class="compare-text" style="margin-bottom:14px;">${escapeHtml(latest.text)}</div>
+            <form data-new-version="${a.id}" style="margin-bottom:14px;">
+              <div class="field">
+                <label class="f-label">Add new version</label>
+                <textarea rows="3" data-version-text="${a.id}" placeholder="Paste the revised wording. The old version stays in history below."></textarea>
+              </div>
+              <button type="submit" class="btn ghost">+ Save new version</button>
+            </form>
+            ${versions.length > 1 ? `
+              <div class="section-title" style="margin-top:8px;">Version history</div>
+              ${versions.slice(1).map((v) => `
+                <div class="version-card">
+                  <div class="version-meta">${fmtDateTime(v.ts)}</div>
+                  <div class="compare-text">${escapeHtml(v.text)}</div>
+                </div>
+              `).join("")}
+            ` : ""}
+          </div>` : ""}
+        </div>
+      `;
+      }).join("")}
+    `;
+  }
+
+  function attachAnchorsTab() {
+    document.getElementById("anchor-form").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const title = document.getElementById("anchor-title").value.trim();
+      const text = document.getElementById("anchor-text").value.trim();
+      if (!title || !text) { showToast("Title and text are required."); return; }
+      anchors.unshift({ id: uid(), title, versions: [{ ts: Date.now(), text }] });
+      saveAnchors();
+      showToast("Anchor created.");
+      render();
+    });
+    document.querySelectorAll("[data-expand-anchor]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const id = el.dataset.expandAnchor;
+        expandedAnchorId = expandedAnchorId === id ? null : id;
+        render();
+      });
+    });
+    document.querySelectorAll("[data-new-version]").forEach((el) => {
+      el.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const id = el.dataset.newVersion;
+        const textEl = document.querySelector(`[data-version-text="${id}"]`);
+        const text = textEl.value.trim();
+        if (!text) return;
+        const a = anchors.find((x) => x.id === id);
+        if (!a) return;
+        a.versions.push({ ts: Date.now(), text });
+        saveAnchors();
+        showToast("New version saved — previous version kept in history.");
+        render();
+      });
+    });
+  }
+
+  function renderDashboardTab() {
+    const markedCount = entries.filter((e) => e.mark).length;
+    const markCounts = MARKS.map((m) => ({ ...m, count: entries.filter((e) => e.mark === m.id).length }));
+    const maxCount = Math.max(1, ...markCounts.map((m) => m.count));
+    const trace = entries.filter((e) => e.mark).slice().sort((a, b) => a.ts - b.ts);
+    const attention = entries.filter((e) => e.mark === "drift" || e.mark === "suppression")
+      .slice().sort((a, b) => b.ts - a.ts).slice(0, 6);
+    const topRecurring = corrections.filter((c) => (c.timesRecurred || 0) > 0)
+      .slice().sort((a, b) => (b.timesRecurred || 0) - (a.timesRecurred || 0)).slice(0, 5);
+
+    const gateTwoCount = entries.filter((e) => e.entryType === "gate_two_trace").length;
+
+    return `
+      <div class="hint" style="margin-bottom:16px;">A single mark isn't a diagnosis — one flagged
+      answer can just be a bad turn. What's worth trusting is the pattern across many entries,
+      checked against something written down. ${entries.length ? `${gateTwoCount} of ${entries.length} entries include an actual gate-two note; the rest are manual observations only.` : ""}</div>
+      <div class="section-title">Signal trace</div>
+      ${trace.length === 0
+        ? `<div class="empty" style="margin-bottom:22px;">Marked entries will appear here as a trace, oldest to newest.</div>`
+        : `<div class="trace">${trace.map((e) => {
+            const m = markById(e.mark);
+            return `<div class="trace-tick" style="background:${m.color}" title="${escapeHtml(fmtDateShort(e.ts) + " — " + m.label + ": " + e.prompt.slice(0, 40))}"></div>`;
+          }).join("")}</div>`}
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num">${entries.length}</div><div class="stat-label">Entries logged</div></div>
+        <div class="stat-card"><div class="stat-num">${entries.length ? Math.round((markedCount / entries.length) * 100) : 0}%</div><div class="stat-label">Reviewed / marked</div></div>
+        <div class="stat-card"><div class="stat-num">${corrections.length}</div><div class="stat-label">Corrections tracked</div></div>
+        <div class="stat-card"><div class="stat-num">${anchors.length}</div><div class="stat-label">Written anchors</div></div>
+      </div>
+
+      <div class="section-title">Marks breakdown</div>
+      ${markCounts.map((m) => `
+        <div class="bar-row">
+          <div class="bar-label">${m.short}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(m.count / maxCount) * 100}%; background:${m.color}"></div></div>
+          <div class="bar-count">${m.count}</div>
+        </div>
+      `).join("")}
+
+      ${corrections.length ? `
+        <div class="section-title">Claims by confidence</div>
+        ${CONFIDENCE_LEVELS.map((lvl) => {
+          const count = corrections.filter((c) => (c.confidence || "hypothesis") === lvl).length;
+          const maxConf = Math.max(1, ...CONFIDENCE_LEVELS.map((l) => corrections.filter((c) => (c.confidence || "hypothesis") === l).length));
+          return `
+            <div class="bar-row">
+              <div class="bar-label">${lvl}</div>
+              <div class="bar-track"><div class="bar-fill" style="width:${(count / maxConf) * 100}%; background:var(--steel)"></div></div>
+              <div class="bar-count">${count}</div>
+            </div>
+          `;
+        }).join("")}
+      ` : ""}
+
+      <div class="section-title">Needs attention — recent drift / suppression</div>
+      ${attention.length === 0 ? `<div class="empty">Nothing flagged as drift or suppression recently.</div>` :
+        attention.map((e) => `
+          <div class="card"><div class="card-body" style="border-top:none; padding-top:14px;">
+            <div class="corr-top">
+              <div class="corr-lesson">${escapeHtml(e.prompt)}</div>
+              <span class="badge" style="background:${markById(e.mark).color}">${markById(e.mark).short}</span>
+            </div>
+          </div></div>
+        `).join("")}
+
+      ${topRecurring.length ? `
+        <div class="section-title">Corrections that keep recurring</div>
+        ${topRecurring.map((c) => `
+          <div class="card"><div class="card-body" style="border-top:none; padding-top:14px;">
+            <div class="corr-top">
+              <div class="corr-lesson">${escapeHtml(c.lesson)}</div>
+              <span class="meta">recurred ${c.timesRecurred}x</span>
+            </div>
+          </div></div>
+        `).join("")}
+      ` : ""}
+    `;
+  }
+
+  function renderExportTab() {
+    return `
+      <div class="field" style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn" id="export-json">↓ Export JSON</button>
+        <button class="btn ghost" id="export-md">↓ Export Markdown</button>
+        <button class="btn danger" id="clear-data">Clear all my data</button>
+      </div>
+
+      <div class="section-title">Import</div>
+      <div class="hint" style="margin-bottom:10px;">
+        Import a previously exported JSON file. Records are merged by id — anything already in
+        this browser is left alone, and only new records get added. This won't overwrite or
+        delete anything currently here.
+      </div>
+      <div class="field" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <input type="file" id="import-file" accept="application/json" />
+        <button class="btn ghost" id="import-btn">↑ Import</button>
+      </div>
+
+      <div class="section-title">Markdown preview</div>
+      <pre class="export-pre">${escapeHtml(buildMarkdown())}</pre>
+    `;
+  }
+
+  function doImport(raw) {
+    let data;
+    try { data = JSON.parse(raw); } catch (e) { showToast("That file isn't valid JSON."); return; }
+    const incomingEntries = (Array.isArray(data.entries) ? data.entries : []).map(normalizeEntry).filter(Boolean);
+    const incomingCorrections = (Array.isArray(data.corrections) ? data.corrections : []).map(normalizeCorrection).filter(Boolean);
+    const incomingAnchors = (Array.isArray(data.anchors) ? data.anchors : []).map(normalizeAnchor).filter(Boolean);
+    if (!incomingEntries.length && !incomingCorrections.length && !incomingAnchors.length) {
+      showToast("Nothing importable found in that file.");
+      return;
+    }
+    const rE = mergeById(entries, incomingEntries);
+    const rC = mergeById(corrections, incomingCorrections);
+    const rA = mergeById(anchors, incomingAnchors);
+    const summary = `+${rE.addedCount} entries, +${rC.addedCount} corrections, +${rA.addedCount} anchors` +
+      (rE.skippedCount + rC.skippedCount + rA.skippedCount > 0
+        ? ` (${rE.skippedCount + rC.skippedCount + rA.skippedCount} already present, skipped)` : "");
+    if (!confirm(`Import will add: ${summary}. Continue?`)) return;
+    entries = rE.merged; corrections = rC.merged; anchors = rA.merged;
+    saveEntries(); saveCorrections(); saveAnchors();
+    showToast("Imported: " + summary);
+    render();
+  }
+
+  function attachExportTab() {
+    document.getElementById("export-json").addEventListener("click", () => {
+      const payload = { schema: SCHEMA_ID, exportedAt: Date.now(), entries, corrections, anchors };
+      downloadBlob("collaboration-mirror.json", JSON.stringify(payload, null, 2), "application/json");
+    });
+    document.getElementById("export-md").addEventListener("click", () => {
+      downloadBlob("collaboration-mirror.md", buildMarkdown(), "text/markdown");
+    });
+    document.getElementById("clear-data").addEventListener("click", () => {
+      if (confirm("This deletes all entries, corrections, and anchors from this browser. Export a copy first if you want to keep it. Continue?")) {
+        entries = []; corrections = []; anchors = [];
+        saveEntries(); saveCorrections(); saveAnchors();
+        showToast("All local data cleared.");
+        render();
+      }
+    });
+    document.getElementById("import-btn").addEventListener("click", () => {
+      const fileInput = document.getElementById("import-file");
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) { showToast("Choose a JSON file first."); return; }
+      const reader = new FileReader();
+      reader.onload = () => doImport(reader.result);
+      reader.onerror = () => showToast("Couldn't read that file.");
+      reader.readAsText(file);
+    });
+  }
+
+  function render() {
+    renderNav();
+    const panel = document.getElementById("panel");
+    if (activeTab === "entry") { panel.innerHTML = renderEntryTab(); attachEntryTab(); }
+    else if (activeTab === "timeline") { panel.innerHTML = renderTimelineTab(); attachTimelineTab(); }
+    else if (activeTab === "corrections") { panel.innerHTML = renderCorrectionsTab(); attachCorrectionsTab(); }
+    else if (activeTab === "anchors") { panel.innerHTML = renderAnchorsTab(); attachAnchorsTab(); }
+    else if (activeTab === "dashboard") { panel.innerHTML = renderDashboardTab(); }
+    else if (activeTab === "export") { panel.innerHTML = renderExportTab(); attachExportTab(); }
+  }
+
+  loadData();
+  render();
+})();
+</script>
+</body>
+</html>
